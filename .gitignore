@@ -1,0 +1,37 @@
+# SQLite / spatial databases
+pixel.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Shapefiles
+*.shp
+*.dbf
+*.shx
+*.prj
+*.cpg
+*.qpj
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Temp extraction outputs
+gipex_*/
+pixel_*/
+pixel_out_*/
+grid_pixels*.csv
+grid_pixels_checkpoint.csv
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
