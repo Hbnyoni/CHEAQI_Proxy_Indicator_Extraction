@@ -84,8 +84,8 @@ Columns `lat`, `lon`, `cell_id` are required. `date_only` is optional — if abs
 
 ## Project
 
-Developed as part of the **CHEAQI-MNCH** (Child Health, Air Quality Indicators — Maternal, Newborn and Child Health) research programme.
+Developed as part of the **CHEAQI-MNCH**  research programme.
 
 **Developer**: CHEAQI-MNCH Research Team  
-**Contact**: hbnyoni@gmail.com  
+**Contact**: hbnyoni@gmail.com  /nyonih@staff.msu.ac.zw
 **License**: MIT
