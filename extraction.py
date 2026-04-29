@@ -627,7 +627,9 @@ class ExtractionRunner:
                     return None
 
             date_str = pd.to_datetime(row[col_date]).strftime('%Y-%m-%d')
-            geom     = ee.Geometry.Point([float(row[col_lon]), float(row[col_lat])])
+            resolution_m = cfg.get('grid_resolution_m', 0)
+            _pt = ee.Geometry.Point([float(row[col_lon]), float(row[col_lat])])
+            geom = _pt.buffer(resolution_m / 2).bounds() if resolution_m and resolution_m > 0 else _pt
 
             rec = {
                 '_task_id': row['_task_id'],
