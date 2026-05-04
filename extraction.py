@@ -561,6 +561,13 @@ class ExtractionRunner:
         col_date = cfg.get('col_date') or ''
         col_src  = cfg.get('col_src')  or ''
 
+        missing = [c for c in [col_id, col_lat, col_lon] if c not in grid_df.columns]
+        if missing:
+            raise KeyError(
+                f"Required column(s) {missing} not found. "
+                f"Available columns: {list(grid_df.columns)}"
+            )
+
         if col_date and col_date in grid_df.columns:
             grid_df[col_date] = pd.to_datetime(grid_df[col_date], errors='coerce')
             grid_df = grid_df.dropna(subset=[col_date])

@@ -989,6 +989,7 @@ app.layout = html.Div([
     dcc.Store(id="store-runner-state"),
     dcc.Store(id="store-grid-csv"),
     dcc.Store(id="store-grid-csv-name"),
+    dcc.Store(id="store-grid-cols"),
     dcc.Download(id="download-report"),
     dcc.Download(id="download-result-csv"),
     dcc.Download(id="download-result-nc"),
@@ -1056,8 +1057,9 @@ def page_welcome():
     ], className="welcome-hero")])
 
 
-def page_pipeline(runner_state=None, grid_csv_name=None):
+def page_pipeline(runner_state=None, grid_csv_name=None, grid_cols=None):
     st = runner_state or runner.get_state()
+    grid_cols = grid_cols or []
 
     grp_checks = []
     for gk, gv in VARIABLE_GROUPS.items():
@@ -1087,6 +1089,22 @@ def page_pipeline(runner_state=None, grid_csv_name=None):
                       style={"background": C["card"], "color": C["text"],
                              "border": f"1px solid {C['border']}",
                              "borderRadius": "6px", "fontSize": "13px"}),
+        ], md=6, className="mb-3")
+
+    def _guess_col(patterns):
+        for c in grid_cols:
+            if any(p in c.lower() for p in patterns):
+                return c
+        return None
+
+    def col_field(label, id_, patterns, optional=False):
+        opts = [{"label": c, "value": c} for c in grid_cols]
+        val  = _guess_col(patterns)
+        hint = "optional — select column" if optional else "select column from file"
+        return dbc.Col([
+            ctrl_label(label),
+            dcc.Dropdown(id=id_, options=opts, value=val, clearable=optional,
+                         placeholder=hint, className="dark-dropdown"),
         ], md=6, className="mb-3")
 
     csv_badge = html.Div([
@@ -1159,12 +1177,11 @@ def page_pipeline(runner_state=None, grid_csv_name=None):
                 field("GEE Project", "cfg-gee-project", "ee-your-project", "ee-cheaqi"),
             ]),
             dbc.Row([
-                field("Cell ID column",  "cfg-col-id",   "e.g. cell_id", "cell_id"),
-                field("Latitude column", "cfg-col-lat",  "e.g. lat",     "lat"),
-                field("Longitude col.",  "cfg-col-lon",  "e.g. lon",     "lon"),
-                field("Date column",     "cfg-col-date",
-                      "e.g. date_only (blank → use date range)", "date_only"),
-                field("Source/ID col. (optional)", "cfg-col-src", "e.g. PID", "PID"),
+                col_field("Cell ID column",           "cfg-col-id",   ["cell_id","id","fid","gid","cell"]),
+                col_field("Latitude column",          "cfg-col-lat",  ["lat","latitude","y"]),
+                col_field("Longitude col.",           "cfg-col-lon",  ["lon","longitude","lng","x"]),
+                col_field("Date column",              "cfg-col-date", ["date","time","datetime"], optional=True),
+                col_field("Source/ID col. (optional)","cfg-col-src",  ["pid","src","source","participant"], optional=True),
             ]),
         ], style={"padding": "8px 4px"}), mb=14),
 
@@ -1727,6 +1744,7 @@ def cb_url_load(n, url):
 @app.callback(
     Output("store-grid-csv",      "data"),
     Output("store-grid-csv-name", "data"),
+    Output("store-grid-cols",     "data"),
     Output("start-msg",           "children", allow_duplicate=True),
     Input("upload-grid-csv",      "contents"),
     State("upload-grid-csv",      "filename"),
@@ -1734,9 +1752,17 @@ def cb_url_load(n, url):
 )
 def cb_grid_csv_upload(contents, filename):
     if not contents:
-        return no_update, no_update, no_update
-    return contents, filename, html.Span(f"✓ Grid file: {filename}",
-                                          style={"color": C["green"]})
+        return no_update, no_update, no_update, no_update
+    cols = []
+    try:
+        _, content_str = contents.split(",")
+        raw_bytes = base64.b64decode(content_str)
+        cols = list(parse_bytes(raw_bytes, filename or "grid.csv").columns)
+    except Exception:
+        pass
+    return (contents, filename, cols,
+            html.Span(f"✓ Grid file: {filename}  ({len(cols)} columns)",
+                      style={"color": C["green"]}))
 
 
 @app.callback(
@@ -1799,10 +1825,11 @@ def cb_pipeline_live(runner_state, page):
     Input("store-page",           "data"),
     Input("store-data",           "data"),
     Input("store-grid-csv-name",  "data"),
+    Input("store-grid-cols",      "data"),
 )
-def cb_page(page, data, grid_csv_name):
+def cb_page(page, data, grid_csv_name, grid_cols):
     if page == "pipeline":
-        return page_pipeline(runner.get_state(), grid_csv_name)
+        return page_pipeline(runner.get_state(), grid_csv_name, grid_cols or [])
     if page == "about":
         return page_about()
 
@@ -1859,6 +1886,7 @@ def cb_sidebar_info(data):
     Input("btn-start",      "n_clicks"),
     State("cfg-gee-project",    "value"),
     State("store-grid-csv",     "data"),
+    State("store-grid-csv-name","data"),
     State("cfg-col-id",         "value"),
     State("cfg-col-lat",        "value"),
     State("cfg-col-lon",        "value"),
@@ -1872,7 +1900,7 @@ def cb_sidebar_info(data):
     State({"type": "grp-check", "index": dash.ALL}, "value"),
     prevent_initial_call=True,
 )
-def cb_start(n, gee_proj, grid_csv_b64, col_id, col_lat, col_lon,
+def cb_start(n, gee_proj, grid_csv_b64, grid_csv_name, col_id, col_lat, col_lon,
              col_date, col_src, date_from, date_to, max_workers, var_workers,
              grid_resolution, grp_vals):
     if not n:
@@ -1884,11 +1912,14 @@ def cb_start(n, gee_proj, grid_csv_b64, col_id, col_lat, col_lon,
 
     try:
         _, content_str = grid_csv_b64.split(",")
-        csv_bytes = base64.b64decode(content_str)
+        raw_bytes = base64.b64decode(content_str)
         tmp_dir   = tempfile.mkdtemp(prefix="gipex_")
         grid_csv  = os.path.join(tmp_dir, "grid_cells.csv")
-        with open(grid_csv, "wb") as f:
-            f.write(csv_bytes)
+        # Always parse through parse_bytes so binary formats (NC/HDF5/Excel) are
+        # converted to a proper CSV before extraction reads them with pd.read_csv.
+        fname = grid_csv_name or "grid.csv"
+        df_grid = parse_bytes(raw_bytes, fname)
+        df_grid.to_csv(grid_csv, index=False)
     except Exception as exc:
         return html.Span(f"File error: {exc}", style={"color": C["red"]}), no_update
 
