@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools >= 80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[project]
+name = "gipex"
+description = "Geospatial Indicators for Proxy Environmental eXposure"
+readme = "README.md"
+license = "Apache-2.0"
+version = "2.1.0"
+requires-python = ">=3.10,<3.13"
+
+dependencies = [
+    "dash",
+    "dash-bootstrap-components",
+    "plotly",
+    "pandas",
+    "numpy",
+    "geopandas",
+    "earthengine-api",
+    "requests",
+    "openpyxl",
+    "xlrd",
+    "pyarrow",
+    "shapely",
+]
+
+authors = [
+  {name = "Handsome Bongani Nyoni", email = "nyonih@staff.msu.ac.zw"},
+  {name = "Tamara Govindasamy", email = "tamara.govindasamy@ibm.com"}
+]
+
+maintainers = [
+    {name = "Handsome Bongani Nyoni", email = "nyonih@staff.msu.ac.zw"},
+]
+
