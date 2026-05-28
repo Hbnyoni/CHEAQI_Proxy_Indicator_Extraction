@@ -2,7 +2,7 @@
 
 **CHEAQI-MNCH Research Tool · v2.1 · 2026**
 
-GIPEX is a Dash web application that extracts 40+ environmental and geospatial proxy indicators from Google Earth Engine (GEE) for user-defined grid cells, with support for time-series analysis, spatial mapping, and automated report generation.
+GIPEX is a Dash web application that extracts 40+ environmental and geospatial proxy indicators from Google Earth Engine (GEE) for user-defined grid cells, with support for time-series analysis, spatial mapping, and automated report generation. Requires input grid file of exposure data as input to perform extraction (TBC*)
 
 ---
 
@@ -21,9 +21,12 @@ GIPEX is a Dash web application that extracts 40+ environmental and geospatial p
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install dash dash-bootstrap-components plotly pandas numpy geopandas \
-            earthengine-api requests openpyxl xlrd pyarrow shapely
+git clone https://github.com/Hbnyoni/CHEAQI_Proxy_Indicator_Extraction.git
+cd "CHEAQI_Proxy_Indicator_Extraction"
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip # Upgrade pip to ensure compatibility with pyproject.toml
+pip install -e .
 
 # Run
 python app.py
@@ -86,6 +89,6 @@ Columns `lat`, `lon`, `cell_id` are required. `date_only` is optional — if abs
 
 Developed as part of the **CHEAQI-MNCH**  research programme.
 
-**Developer**: CHEAQI-MNCH Research Team  
+**Developer**: CHEAQI-MNCH Research Team
 **Contact**: hbnyoni@gmail.com  /nyonih@staff.msu.ac.zw
 **License**: MIT
