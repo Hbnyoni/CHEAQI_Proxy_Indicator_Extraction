@@ -28,6 +28,9 @@ source venv/bin/activate
 python -m pip install --upgrade pip # Upgrade pip to ensure compatibility with pyproject.toml
 pip install -e .
 
+# For contributors
+pip install -e '.[test,dev]'
+
 # Run
 python app.py
 # Open http://localhost:8087
